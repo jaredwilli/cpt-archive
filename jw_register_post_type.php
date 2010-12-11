@@ -29,22 +29,25 @@ if ( !class_exists('JW_Register_CPT' )) {
 		private $post_type_object;
 		private $args;
 
-		public $meta_fields = array(
+		private $meta_fields = array(
 			'title', 'description', 'excerpt', 'post_category', 'post_tag'
 		);
 
 		private $defaults = array(
-            'public' => true, 
             'show_ui' => true,
             '_builtin' => false,
-            'hierarchical' => false,
-            'capability_type' => 'post',
-            'taxonomies' => array( 'category', 'post_tag' ),
-            'supports' => array( 
-			   'title', 'editor', 'excerpt',
-			   'author', 'thumbnail',
-			   'comments', 'trackbacks'
-			)
+            'supports' => array( 'title', 'editor', 'thumbnail', 'comments', 'trackbacks' )
+		);
+
+		private $columns = array(
+			'cb' => '<input type="checkbox" />',
+			'title' => 'Title',
+			'author' => 'Author',
+			'category' => 'Category',
+			'post_tag' => 'Tags',
+			'comments' => '',
+			'date' => 'Date',
+			'thumbnail' => 'Thumbnail'
 		);
 		
 		private function set_defaults() {
@@ -66,9 +69,10 @@ if ( !class_exists('JW_Register_CPT' )) {
 		}
 
 		/**
+		 *
 		 * Constructor method
 		 */
-		public function __construct( $post_type = null, $args = array(), $meta_fields = array(), $custom_plural = false ) {
+		public function __construct( $post_type = null, $args = array(), $meta_fields = array(), $custom_plural = false, $cols = array() ) {
 			if ( !$post_type ) {
 				return;
 			}
@@ -83,17 +87,20 @@ if ( !class_exists('JW_Register_CPT' )) {
 			$this->args = wp_parse_args( $args, $this->defaults );
 			
 			// set the fields to insert data into. custom metaboxes can be used this way
-			$this->meta_fields = $meta_fields;
-						
+			$this->meta_fields = wp_parse_args( $meta_fields, $this-meta_fields );
+
+			// custom columns
+			$this->columns = wp_parse_args( $cols, $this-columns );
+
 			// add hooks
 			$this->add_actions();
 			$this->add_filters();
-
+		
 		}
 		
 		/** ACTIONS **/
 		public function add_actions() {
-			add_action( 'init', array( &$this, 'register_post_type' ));
+			add_action( 'admin_init', array( &$this, 'register_post_type' ));
 			add_action( 'template_redirect', array( &$this, 'template_redirect' ));
 	        add_action( 'wp_insert_post', array( &$this, 'wp_insert_post' ), 10, 2 );
 			add_action( 'right_now_content_table_end', array( &$this, 'cpt_right_now_widget' ));
@@ -259,35 +266,27 @@ if ( !class_exists('JW_Register_CPT' )) {
 				echo '<td class="t ' . $taxonomy->name . '">' . $text . '</td></tr>';
 			}
 		}
-
+		
 		/**
 		 * Create the columns and heading title text
 		 */
 		public function manage_edit_columns( $columns ) {
-			if ( empty( $columns )) {
-				$columns = array(
-					'cb' => '<input type="checkbox" />',
-					'title' => 'Title',
-					'author' => 'Author',
-					'category' => 'Category',
-					'post_tag' => 'Tags',
-					'comments' => '',
-					'date' => 'Date',
-					'thumbnail' => 'Thumbnail'
-				);
-			} else {
-				$columns = $columns;
-			}
-			return $columns;
+			$this->columns = $columns;
+			return $this->columns;
 		}
 
 		/**
 		 * switching which $column we show the content in
 		 */
-		public function make_custom_columns( $column ) { 
+		public function make_custom_columns( $column ) {
 			global $post;
-			switch ($column) {
+			$heading = $column[0];
+			switch ( $column ) {
+				case $heading : ;
+					break;
+					
 
+			/*
 				case 'title' : 
 					the_title();
 					break;
@@ -372,8 +371,10 @@ if ( !class_exists('JW_Register_CPT' )) {
 				case 'thumbnail' : 
 					the_post_thumbnail();
 					break;
+			*/
+			
 			}
-		}		
+		}
 
 	} // end JW_Register_CPT class
 	
@@ -398,10 +399,97 @@ if ( !class_exists('JW_Register_CPT' )) {
 
 }
 
-/*
-class sites extends JW_Register_CPT {
+class TypePerson extends JW_Register_CPT {
+	
+	private $post_type = 'person';
+	private $custom_plural = 'people';
+	private $args_array = array(
+		'public' => true, 
+		'show_ui' => true,
+		'_builtin' => false,
+		'hierarchical' => false,
+		'capability_type' => 'post',
+		'supports' => array( 'title', 'editor', 'thumbnail', 'comments' )
+	);
+	public $meta_fields = array( 'title', 'description', 'checkbox', 'post_category' );
+	private $columns = array(
+		'cb' => '<input type="checkbox" />',
+		'title' => 'Title',
+		'category' => 'Category',
+		'post_tag' => 'Tags',
+		'checkbox' => 'Checkbox',
+		'thumbnail' => 'Thumbnail'
+	);
+	
+	public function TypePerson() {
+        add_action( 'admin_init', array( &$this, 'metabox_init' ));
+		add_action( 'quick_edit_custom_box', array( &$this, 'quick_edit_custom' ), 10, 2);
+		add_action( 'admin_head-edit.php', array( &$this, 'quick_edit_script' ));
 
-	jw_register_cpt( $post_type, $args_array, $custom_plural, $meta_fields );
+		jw_register_cpt( $post_type, $args_array, $meta_fields, $custom_plural, $columns );
+	}
 
+
+    public function metabox_init() {
+        add_meta_box( 'checkbox-meta', 'Checkbox', array( &$this, 'meta_checkbox' ), 'person', 'side', 'high' );
+    }
+	
+	
+	public function meta_checkbox() {
+        global $post, $checkbox;	
+		$checkbox = get_post_meta( $post->ID, 'checkbox' );
+		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; }
+		
+		echo '<p><label for="checkbox">
+				<input type="checkbox" id="checkbox" name="checkbox" ' . $checked . ' />
+				<strong>' . _e( "This product only sold online" ) . '</strong>
+			  </label></p>';
+	}
+
+	/**
+	 * Quick Edit metaboxes
+	 */
+	public function quick_edit_custom( $col, $type ) {
+        global $post, $checkbox;
+		if ( $col != 'checkbox' || $type != $this->post_type ) {
+			return;
+		}
+		$checkbox = get_post_meta( $post->ID, 'checkbox' );
+		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; } ?>
+		<fieldset class="inline-edit-col-right">
+			<div class="inline-edit-col">
+				<div class="inline-edit-group">
+					<label class="alignleft">
+						<input type="checkbox" name="checkbox" id="checkbox" <?php echo $checked;?> />
+						<span class="checkbox-title"><?php _e( 'Title' ); ?></span>
+					</label>
+				</div>
+			</div>
+		</fieldset><?php
+	}
+	
+	/**
+	 * Quick Edit add script
+	 */
+	public function quick_edit_script() { ?>	
+		<script type="text/javascript">
+		jQuery(function() {
+			jQuery('a.editinline').live('click', function() {
+				var id = inlineEditPost.getId(this),
+					val = parseInt( jQuery('#inline_' + id + '_cpt').text() );
+				jQuery('#checkbox').attr('checked', !!val);
+			});
+		});
+		</script><?php	
+	}
+	
 }
-*/
+
+
+
+add_action( 'init', 'pTypeIt' );
+function pTypeIt() {
+    global $person;
+    $person = new TypePerson();
+}
+?>
