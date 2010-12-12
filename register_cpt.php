@@ -1,15 +1,20 @@
 <?php
 /**
- * Register_CPT class
+ * Register_CPT
  * @usage register_cpt( $post_type, $args_array, $custom_plural, $meta_fields );
  *
- * @author Jared Williams
- * @link http://new2wp.com
+ * Built by Matt Wiebe
+ * http://somadesign.ca/projects/smarter-custom-post-types/
+ *
+ * Modified by Jared Williams
+ * http://new2wp.com/
  * 
  * @param string $post_type The post type to register
  * @param array $args The arguments to pass into @link register_post_type(). 
  * Some defaults provided to ensure the UI is available.
- * @param string $custom_plural The plural name to be used in rewriting (http://yourdomain.com/custom_plural/ ). If left off, an "s" will be appended to your post type, which will break some words. (person, box, ox. Oh, English.)
+ * @param string $custom_plural The plural name to be used in rewriting 
+   (http://yourdomain.com/custom_plural/ ). If left off, an "s" will be 
+   appended to your post type, which will break some words.
  **/
 
 if ( !class_exists('Register_CPT' )) {
@@ -20,11 +25,6 @@ if ( !class_exists('Register_CPT' )) {
 		private $post_slug;
 		private $post_type_object;
 		private $args;
-		private $meta_fields;
-
-		private $field_defaults = array(
-			'title', 'description', 'excerpt', 'post_category', 'post_tag'
-		);
 
 		private $defaults = array(
             'show_ui' => true,
@@ -249,3 +249,113 @@ if ( !class_exists('Register_CPT' )) {
 	}
 
 }
+
+
+
+/*
+class TypePerson extends JW_Register_CPT {
+	
+	private $post_type = 'person';
+	private $custom_plural = 'people';
+	private $args_array = array(
+		'public' => true, 
+		'show_ui' => true,
+		'_builtin' => false,
+		'hierarchical' => false,
+		'capability_type' => 'post',
+		'supports' => array( 'title', 'editor', 'thumbnail', 'comments' )
+	);
+	public $meta_fields = array( 'title', 'description', 'checkbox', 'post_category' );
+	private $columns = array(
+		'cb' => '<input type="checkbox" />',
+		'title' => 'Title',
+		'category' => 'Category',
+		'post_tag' => 'Tags',
+		'checkbox' => 'Checkbox',
+		'thumbnail' => 'Thumbnail'
+	);
+	
+	public function __construct() {
+
+		// add hooks
+		$this->add_actions();
+		// $this->add_filters();
+	}
+
+	public function add_actions() {
+		add_action( 'admin_init', array( &$this, 'metabox_init' ));
+		add_action( 'quick_edit_custom_box', array( &$this, 'quick_edit_custom' ), 10, 2);
+		add_action( 'admin_head-edit.php', array( &$this, 'quick_edit_script' ));
+	}
+	
+		
+	public function gettin_jiggy_init() {
+		jw_register_cpt( $post_type, $args_array, $meta_fields, $custom_plural, $columns );
+        add_meta_box( 'checkbox-meta', 'Checkbox', array( &$this, 'meta_checkbox' ), 'person', 'side', 'high' );
+    }
+	
+	
+	public function meta_checkbox() {
+        global $post, $checkbox;	
+		$checkbox = get_post_meta( $post->ID, 'checkbox' );
+		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; }
+		
+		echo '<p><label for="checkbox">
+				<input type="checkbox" id="checkbox" name="checkbox" ' . $checked . ' />
+				<strong>' . _e( "This product only sold online" ) . '</strong>
+			  </label></p>';
+	}
+
+	/**
+	 * Quick Edit metaboxes
+	 *
+	public function quick_edit_custom( $col, $type ) {
+        global $post, $checkbox;
+		if ( $col != 'checkbox' || $type != $this->post_type ) {
+			return;
+		}
+		$checkbox = get_post_meta( $post->ID, 'checkbox' );
+		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; } ?>
+		<fieldset class="inline-edit-col-right">
+			<div class="inline-edit-col">
+				<div class="inline-edit-group">
+					<label class="alignleft">
+						<input type="checkbox" name="checkbox" id="checkbox" <?php echo $checked;?> />
+						<span class="checkbox-title"><?php _e( 'Title' ); ?></span>
+					</label>
+				</div>
+			</div>
+		</fieldset><?php
+	}
+	
+	/**
+	 * Quick Edit add script
+	 *
+	public function quick_edit_script() { ?>	
+		<script type="text/javascript">
+		jQuery(function() {
+			jQuery('a.editinline').live('click', function() {
+				var id = inlineEditPost.getId(this),
+					val = parseInt( jQuery('#inline_' + id + '_cpt').text() );
+				jQuery('#checkbox').attr('checked', !!val);
+			});
+		});
+		</script><?php	
+	}
+	
+}
+
+
+
+function pTypeIt() {
+	global $person;
+
+	try {
+		$person = new TypePerson();
+	} catch((Exception $e) {
+		echo $e->getMessage();
+	}
+}
+add_action( 'init', 'pTypeIt' );
+*/
+?>
