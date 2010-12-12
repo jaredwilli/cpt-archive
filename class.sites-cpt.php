@@ -102,13 +102,16 @@ class TypeSites {
      * Causes all pages to show a 404 page so commented out for now
     */
     // Template redirect for custom templates
-    public function template_redirect() {
-        global $wp_query;
-        if ( $wp_query->query_vars['post_type'] == 'site' ) {
-            get_template_part( 'single-site' ); // a custom page-slug.php template
-            die();
-        }
-    }
+	public function template_redirect() {
+		global $wp, $wp_query;
+		if ($wp->query_vars['post_type'] == 'site' ) {
+			if (have_posts()) {	
+				get_template_part( 'single-site' ); die(); 
+			} else { 
+				$wp_query->is_404 = true; 
+			}
+		}
+	}
 
     // For inserting new 'site' post type posts
     public function wp_insert_post($post_id, $post = null) {
