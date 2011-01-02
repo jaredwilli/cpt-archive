@@ -1,12 +1,21 @@
 <?php
 /**
+ * Plugin Name: Reader's Digest Slide Show
+ * Version: 0.1.0
+ * Description: Adds a custom post type for slide show posts.
+ * Author: Jared Williams
+ * Author URI: http://new2wp.com
+ * Plugin URI: http://www.movinginteractive.com
+ */
+ 
+/**
  * Register_CPT
- * @usage register_cpt( $post_type, $args_array, $custom_plural, $meta_fields );
+ * @usage register_cpt( $post_type, $args_array, $custom_plural );
  *
  * Built by Matt Wiebe
  * http://somadesign.ca/projects/smarter-custom-post-types/
  *
- * Modified by Jared Williams
+ * Improved by Jared Williams
  * http://new2wp.com/
  * 
  * @param string $post_type The post type to register
@@ -29,13 +38,14 @@ if ( !class_exists('Register_CPT' )) {
 		private $defaults = array(
             'show_ui' => true,
             'taxonomies' => array( 'category', 'post_tag' ),
-            'supports' => array( 'title', 'editor', 'excerpt', 'author', 'comments', 'thumbnail' )
+            'supports' => array( 'title' ) // 'editor', 'excerpt', 'author', 'comments', 'thumbnail'
 		);
 		
 		private function set_defaults() {
 			$plural = ucwords( $this->post_slug );
 			$post_type = ucwords( $this->post_type );
 			
+			// Labels
 			$this->defaults['labels'] = array(
 				'name' => $plural,
 				'singular_name' => $post_type,
@@ -54,9 +64,8 @@ if ( !class_exists('Register_CPT' )) {
 		 * Constructor method
 		 */
 		public function __construct( $post_type = null, $args = array(), $custom_plural = false ) {
-			if ( !$post_type ) {
+			if ( !$post_type )
 				return;
-			}
 			
 			// Post Type, post type slug
 			$this->post_type = $post_type;
@@ -79,8 +88,8 @@ if ( !class_exists('Register_CPT' )) {
 		public function add_actions() {
 			add_action( 'init', array( &$this, 'register_post_type' )); // gettin' jiggy wit it
 			add_action( 'template_redirect', array( &$this, 'template_redirect' ));
-	        add_action( 'wp_insert_post', array( &$this, 'wp_insert_post' ), 10, 2 ); // inserter
-			add_action( 'right_now_content_table_end', array( &$this, 'cpt_right_now_widget' ));
+	        // add_action( 'wp_insert_post', array( &$this, 'wp_insert_post' ), 10, 2 ); // inserter
+			//add_action( 'right_now_content_table_end', array( &$this, 'cpt_right_now_widget' ));
 		}
 		
 		/**
@@ -98,10 +107,14 @@ if ( !class_exists('Register_CPT' )) {
 		 * Template redirect for custom page templates
 		*/
 		public function template_redirect() {
-			global $wp_query;
-			if ( $wp_query->query_vars['post_type'] == $this->post_type ) {
-				get_template_part( 'single-' . $this->post_type ); 
-				die();
+			global $wp, $wp_query;
+			if ($wp->query_vars['post_type'] == $this->post_type ) {
+				if (have_posts()) {	
+					get_template_part( 'single-' . $this->post_type ); 
+					die(); 
+				} else { 
+					$wp_query->is_404 = true; 
+				}
 			}
 		}
 
@@ -134,7 +147,7 @@ if ( !class_exists('Register_CPT' )) {
 		}
 		
 		/**
-		 * Rewrite
+		 * Rewrites
 		 */
 		public function add_rewrite_rules( $wp_rewrite ) {
 			$new_rules = array();
@@ -178,7 +191,7 @@ if ( !class_exists('Register_CPT' )) {
 		 * Add custom post types to the main RSS feed of site
 		 * Show any custom post type on taxonomy/term pages
 		 */
-		function custom_cpt_requests( $vars ) {
+		public function custom_cpt_requests( $vars ) {
 			if ( isset($vars['feed'] ) && !isset( $vars['post_type'] ))
 				$vars['post_type'] = $this->post_type;
 
@@ -191,7 +204,7 @@ if ( !class_exists('Register_CPT' )) {
 		/**
 		 * Search custom post types by default for all public post types
 		 */
-		function custom_cpt_search( $query ) {
+		public function custom_cpt_search( $query ) {
 			$post_types = get_post_types( array( 'public' => true ), 'names', 'and' );
 			if ( $query->is_search ) { 
 				$query->set( 'post_type', $post_types );
@@ -213,8 +226,8 @@ if ( !class_exists('Register_CPT' )) {
 		/**
 		 * Add custom post types and taxonomies to the 'Right Now' dashboard widget
 		 */		
-		function cpt_right_now_widget() {
-				// post types				
+		private function cpt_right_now_widget() {
+				// post types
 				$post_types = get_post_types( array( 'public' => true, '_builtin' => false ), 'object', 'and' );
 				foreach( $post_types as $post_type ) {
 				$num_posts = wp_count_posts( $post_type->name );
@@ -231,7 +244,6 @@ if ( !class_exists('Register_CPT' )) {
 
 	} // end Register_CPT class
 	
-	
 	/**
 	 * @uses Register_CPT class
 	 * @param string $post_type The post type to register
@@ -244,118 +256,9 @@ if ( !class_exists('Register_CPT' )) {
 
 	if ( !function_exists( 'register_cpt' ) && class_exists( 'Register_CPT' )) {
 		function register_cpt( $post_type = null, $args = array(), $custom_plural = false ) {
-			$custom_post = new Register_CPT($post_type, $args, $custom_plural);
+			$custom_post = new Register_CPT( $post_type, $args, $custom_plural );
 		}
 	}
 
 }
-
-
-
-/*
-class TypePerson extends JW_Register_CPT {
-	
-	private $post_type = 'person';
-	private $custom_plural = 'people';
-	private $args_array = array(
-		'public' => true, 
-		'show_ui' => true,
-		'_builtin' => false,
-		'hierarchical' => false,
-		'capability_type' => 'post',
-		'supports' => array( 'title', 'editor', 'thumbnail', 'comments' )
-	);
-	public $meta_fields = array( 'title', 'description', 'checkbox', 'post_category' );
-	private $columns = array(
-		'cb' => '<input type="checkbox" />',
-		'title' => 'Title',
-		'category' => 'Category',
-		'post_tag' => 'Tags',
-		'checkbox' => 'Checkbox',
-		'thumbnail' => 'Thumbnail'
-	);
-	
-	public function __construct() {
-
-		// add hooks
-		$this->add_actions();
-		// $this->add_filters();
-	}
-
-	public function add_actions() {
-		add_action( 'admin_init', array( &$this, 'metabox_init' ));
-		add_action( 'quick_edit_custom_box', array( &$this, 'quick_edit_custom' ), 10, 2);
-		add_action( 'admin_head-edit.php', array( &$this, 'quick_edit_script' ));
-	}
-	
-		
-	public function gettin_jiggy_init() {
-		jw_register_cpt( $post_type, $args_array, $meta_fields, $custom_plural, $columns );
-        add_meta_box( 'checkbox-meta', 'Checkbox', array( &$this, 'meta_checkbox' ), 'person', 'side', 'high' );
-    }
-	
-	
-	public function meta_checkbox() {
-        global $post, $checkbox;	
-		$checkbox = get_post_meta( $post->ID, 'checkbox' );
-		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; }
-		
-		echo '<p><label for="checkbox">
-				<input type="checkbox" id="checkbox" name="checkbox" ' . $checked . ' />
-				<strong>' . _e( "This product only sold online" ) . '</strong>
-			  </label></p>';
-	}
-
-	/**
-	 * Quick Edit metaboxes
-	 *
-	public function quick_edit_custom( $col, $type ) {
-        global $post, $checkbox;
-		if ( $col != 'checkbox' || $type != $this->post_type ) {
-			return;
-		}
-		$checkbox = get_post_meta( $post->ID, 'checkbox' );
-		if ( $checkbox ) { $checked = 'checked="checked"'; } else { $checked = ''; } ?>
-		<fieldset class="inline-edit-col-right">
-			<div class="inline-edit-col">
-				<div class="inline-edit-group">
-					<label class="alignleft">
-						<input type="checkbox" name="checkbox" id="checkbox" <?php echo $checked;?> />
-						<span class="checkbox-title"><?php _e( 'Title' ); ?></span>
-					</label>
-				</div>
-			</div>
-		</fieldset><?php
-	}
-	
-	/**
-	 * Quick Edit add script
-	 *
-	public function quick_edit_script() { ?>	
-		<script type="text/javascript">
-		jQuery(function() {
-			jQuery('a.editinline').live('click', function() {
-				var id = inlineEditPost.getId(this),
-					val = parseInt( jQuery('#inline_' + id + '_cpt').text() );
-				jQuery('#checkbox').attr('checked', !!val);
-			});
-		});
-		</script><?php	
-	}
-	
-}
-
-
-
-function pTypeIt() {
-	global $person;
-
-	try {
-		$person = new TypePerson();
-	} catch((Exception $e) {
-		echo $e->getMessage();
-	}
-}
-add_action( 'init', 'pTypeIt' );
-*/
 ?>
